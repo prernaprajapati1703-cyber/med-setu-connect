@@ -1,15 +1,16 @@
+/// <reference types="google.maps" />
 import { createFileRoute } from "@tanstack/react-router";
 import { useEffect, useRef, useState } from "react";
 import { useServerFn } from "@tanstack/react-start";
 import { searchNearbyHospitals } from "@/lib/hospitals.functions";
 import { AppShell } from "@/components/AppShell";
 import { useLang } from "@/lib/i18n/LanguageProvider";
-import { MapPin, Navigation, Phone, Loader2 } from "lucide-react";
+import { MapPin, Navigation } from "lucide-react";
+import { Loader2 } from "lucide-react";
 import { toast } from "sonner";
 
 declare global {
   interface Window {
-    google?: typeof google;
     __medsetuInitMap?: () => void;
   }
 }
