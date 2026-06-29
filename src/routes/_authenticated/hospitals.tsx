@@ -1,16 +1,17 @@
-/// <reference types="google.maps" />
 import { createFileRoute } from "@tanstack/react-router";
 import { useEffect, useRef, useState } from "react";
 import { useServerFn } from "@tanstack/react-start";
 import { searchNearbyHospitals } from "@/lib/hospitals.functions";
 import { AppShell } from "@/components/AppShell";
 import { useLang } from "@/lib/i18n/LanguageProvider";
-import { MapPin, Navigation } from "lucide-react";
-import { Loader2 } from "lucide-react";
+import { MapPin, Navigation, Loader2 } from "lucide-react";
 import { toast } from "sonner";
 
+// Google Maps JS is loaded at runtime; we treat the global as `any` to avoid types churn.
+type GMaps = { Map: new (el: HTMLElement, opts: Record<string, unknown>) => unknown; Marker: new (opts: Record<string, unknown>) => { setMap: (m: unknown) => void }; SymbolPath: { CIRCLE: number } };
 declare global {
   interface Window {
+    google?: { maps: GMaps };
     __medsetuInitMap?: () => void;
   }
 }
@@ -37,8 +38,8 @@ function HospitalsPage() {
   const [hospitals, setHospitals] = useState<Hospital[]>([]);
   const [busy, setBusy] = useState(true);
   const mapRef = useRef<HTMLDivElement | null>(null);
-  const mapInst = useRef<google.maps.Map | null>(null);
-  const markersRef = useRef<google.maps.Marker[]>([]);
+  const mapInst = useRef<unknown>(null);
+  const markersRef = useRef<Array<{ setMap: (m: unknown) => void }>>([]);
 
   // Get location, then search
   useEffect(() => {
