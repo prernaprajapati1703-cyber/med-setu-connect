@@ -55,7 +55,7 @@ Rules:
       severity,
       specialist: result.specialist,
       precautions: result.precautions ?? [],
-      ai_response: result as unknown as Record<string, unknown>,
+      ai_response: JSON.parse(JSON.stringify(result)),
       region: data.region,
     }).select().single();
 
