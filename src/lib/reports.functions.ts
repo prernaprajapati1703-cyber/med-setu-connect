@@ -54,7 +54,7 @@ Rules:
       original_name: data.filename,
       language: data.language,
       ai_summary: result.summary,
-      ai_response: result as unknown as Record<string, unknown>,
+      ai_response: JSON.parse(JSON.stringify(result)),
     });
     if (error) console.error("report save failed", error);
 
