@@ -90,7 +90,7 @@ function MedsPage() {
     const { data: { user } } = await supabase.auth.getUser();
     if (!user) return;
     await supabase.from("medicine_logs").insert({ medicine_id: m.id, user_id: user.id, status: "taken" });
-    toast.success(t.toString ? "Marked taken" : "Marked taken");
+    toast.success("Marked taken");
   };
 
   return (
