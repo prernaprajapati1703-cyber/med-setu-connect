@@ -36,7 +36,7 @@ function AdminPage() {
     if (!ok) return;
     try {
       const a = await fetchAnalytics({});
-      setData(a as Analytics);
+      setData(a as unknown as Analytics);
     } catch (e) { console.error(e); }
   };
   useEffect(() => { void load(); }, []);
