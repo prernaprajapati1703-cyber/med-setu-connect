@@ -5,6 +5,7 @@ import {
 import { useEffect, type ReactNode } from "react";
 import { Toaster } from "@/components/ui/sonner";
 import { LanguageProvider } from "@/lib/i18n/LanguageProvider";
+import { ThemeProvider, useTheme } from "@/lib/theme/ThemeProvider";
 
 import appCss from "../styles.css?url";
 import { reportLovableError } from "../lib/lovable-error-reporting";
@@ -83,10 +84,24 @@ function RootComponent() {
   const { queryClient } = Route.useRouteContext();
   return (
     <QueryClientProvider client={queryClient}>
-      <LanguageProvider>
-        <Outlet />
-        <Toaster position="top-center" richColors />
-      </LanguageProvider>
+      <ThemeProvider>
+        <ThemeMeta />
+        <LanguageProvider>
+          <Outlet />
+          <Toaster position="top-center" richColors />
+        </LanguageProvider>
+      </ThemeProvider>
     </QueryClientProvider>
   );
+}
+
+function ThemeMeta() {
+  const { resolved } = useTheme();
+  useEffect(() => {
+    const meta = document.querySelector('meta[name="theme-color"]') as HTMLMetaElement | null;
+    if (meta) {
+      meta.content = resolved === "dark" ? "#0F172A" : "#0A6CB8";
+    }
+  }, [resolved]);
+  return null;
 }

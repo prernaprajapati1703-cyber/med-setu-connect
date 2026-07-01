@@ -105,6 +105,10 @@ export const STRINGS = {
   // Profile
   profile_title: "Profile",
   language: "Language",
+  theme: "Theme",
+  light: "Light",
+  dark: "Dark",
+  system: "System",
   abha_id: "ABHA Health ID (optional)",
   sign_out: "Sign out",
 
@@ -193,7 +197,8 @@ export const HINDI: Partial<Record<StringKey, string>> = {
   times_per_day: "समय (जैसे 08:00, 20:00)", mark_taken: "लिया गया",
   no_medicines: "अभी कोई दवा नहीं। शुरू करने के लिए एक जोड़ें।",
   notifications_enable: "अनुस्मारक के लिए ब्राउज़र सूचनाएँ चालू करें",
-  profile_title: "प्रोफ़ाइल", language: "भाषा",
+  profile_title: "प्रोफ़ाइल", language: "भाषा", theme: "थीम",
+  light: "हल्का", dark: "गहरा", system: "सिस्टम",
   abha_id: "ABHA स्वास्थ्य ID (वैकल्पिक)", sign_out: "लॉग आउट",
   admin_title: "सरकारी स्वास्थ्य डैशबोर्ड",
   hotspots: "रोग हॉटस्पॉट", top_conditions: "शीर्ष रोग",

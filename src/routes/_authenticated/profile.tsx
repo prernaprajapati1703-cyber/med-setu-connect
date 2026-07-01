@@ -3,8 +3,9 @@ import { useEffect, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { AppShell } from "@/components/AppShell";
 import { useLang } from "@/lib/i18n/LanguageProvider";
+import { useTheme } from "@/lib/theme/ThemeProvider";
 import { LANGUAGES, type LangCode } from "@/lib/i18n/languages";
-import { User, LogOut, ShieldCheck, Loader2 } from "lucide-react";
+import { User, LogOut, ShieldCheck, Loader2, Sun, Moon, Monitor } from "lucide-react";
 import { toast } from "sonner";
 import { useServerFn } from "@tanstack/react-start";
 import { grantSelfAdmin } from "@/lib/admin.functions";
@@ -26,6 +27,7 @@ interface Profile {
 
 function ProfilePage() {
   const { t, lang, setLang } = useLang();
+  const { theme, setTheme } = useTheme();
   const navigate = useNavigate();
   const grant = useServerFn(grantSelfAdmin);
   const [p, setP] = useState<Profile | null>(null);
@@ -96,6 +98,31 @@ function ProfilePage() {
           >
             {LANGUAGES.map((l) => <option key={l.code} value={l.code}>{l.native} — {l.name}</option>)}
           </select>
+        </label>
+
+        <label className="block">
+          <span className="text-xs font-medium uppercase tracking-wider text-muted-foreground">{t("theme")}</span>
+          <div className="mt-1 flex rounded-xl border border-border bg-card p-1">
+            {([
+              { value: "light", label: t("light"), Icon: Sun },
+              { value: "dark", label: t("dark"), Icon: Moon },
+              { value: "system", label: t("system"), Icon: Monitor },
+            ] as const).map(({ value, label, Icon }) => {
+              const active = theme === value;
+              return (
+                <button
+                  key={value}
+                  type="button"
+                  onClick={() => setTheme(value)}
+                  className={`flex flex-1 items-center justify-center gap-1.5 rounded-lg px-2 py-2 text-sm font-medium transition-colors ${
+                    active ? "bg-primary text-primary-foreground" : "text-muted-foreground hover:text-foreground"
+                  }`}
+                >
+                  <Icon className="h-4 w-4" />{label}
+                </button>
+              );
+            })}
+          </div>
         </label>
 
         <button onClick={save} disabled={busy}
