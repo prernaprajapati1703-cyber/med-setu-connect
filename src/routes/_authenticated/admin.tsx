@@ -1,7 +1,7 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { useEffect, useState } from "react";
 import { useServerFn } from "@tanstack/react-start";
-import { adminAnalytics, isAdmin } from "@/lib/admin.functions";
+import { adminAnalytics, isAdmin, seedDemoAnalytics, clearDemoAnalytics } from "@/lib/admin.functions";
 import { supabase } from "@/integrations/supabase/client";
 import { AppShell } from "@/components/AppShell";
 import { useLang } from "@/lib/i18n/LanguageProvider";
