@@ -161,9 +161,19 @@ function HospitalsPage() {
 
       <div ref={mapRef} className="mt-3 h-64 w-full overflow-hidden rounded-2xl border border-border bg-secondary/40" />
 
+      {locError && (
+        <div className="mt-3 rounded-xl border border-destructive/30 bg-destructive/5 p-3 text-sm">
+          <p className="text-destructive">{locError}</p>
+          <div className="mt-2 flex gap-2">
+            <button onClick={requestLocation} className="rounded-full bg-primary px-3 py-1.5 text-xs font-medium text-primary-foreground hover:bg-primary/90">Retry</button>
+            <button onClick={useFallbackLocation} className="rounded-full border border-border px-3 py-1.5 text-xs font-medium hover:bg-secondary">Use Delhi as fallback</button>
+          </div>
+        </div>
+      )}
+
       <div className="mt-4 space-y-2">
         {busy && <div className="flex items-center gap-2 text-sm text-muted-foreground"><Loader2 className="h-4 w-4 animate-spin" />{t("hospitals_locating")}</div>}
-        {!busy && hospitals.length === 0 && <p className="text-sm text-muted-foreground">{t("hospitals_none")}</p>}
+        {!busy && !locError && hospitals.length === 0 && <p className="text-sm text-muted-foreground">{t("hospitals_none")}</p>}
         {hospitals.map((h) => (
           <div key={h.place_id} className="flex items-start gap-3 rounded-xl border border-border bg-card p-3">
             <div className={`grid h-10 w-10 shrink-0 place-items-center rounded-lg ${h.emergency_24h ? "bg-destructive/10 text-destructive" : "bg-primary/10 text-primary"}`}>
