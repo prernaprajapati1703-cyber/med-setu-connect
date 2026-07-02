@@ -2,11 +2,22 @@ import { createFileRoute } from "@tanstack/react-router";
 import { useEffect, useRef, useState } from "react";
 import { useServerFn } from "@tanstack/react-start";
 import { createSosAlert } from "@/lib/sos.functions";
+import { searchNearbyHospitals } from "@/lib/hospitals.functions";
 import { supabase } from "@/integrations/supabase/client";
 import { AppShell } from "@/components/AppShell";
 import { useLang } from "@/lib/i18n/LanguageProvider";
-import { Siren, Phone, Plus, Trash2, CheckCircle2 } from "lucide-react";
+import { Siren, Phone, Plus, Trash2, CheckCircle2, MapPin, Navigation, Share2, MessageCircle } from "lucide-react";
 import { toast } from "sonner";
+
+interface NearbyHospital {
+  place_id: string;
+  name: string;
+  address?: string;
+  lat: number; lng: number;
+  emergency_24h?: boolean;
+  distance_m?: number;
+  phone?: string;
+}
 
 export const Route = createFileRoute("/_authenticated/sos")({
   head: () => ({ meta: [{ title: "Emergency SOS — MedSetu" }] }),
@@ -18,29 +29,45 @@ interface Contact { id: string; name: string; phone: string; relation: string | 
 function SosPage() {
   const { t, lang } = useLang();
   const sos = useServerFn(createSosAlert);
+  const findHospitals = useServerFn(searchNearbyHospitals);
   const [holding, setHolding] = useState(false);
   const [progress, setProgress] = useState(0);
   const [sent, setSent] = useState(false);
   const [busy, setBusy] = useState(false);
+  const [coords, setCoords] = useState<{ lat: number; lng: number } | null>(null);
+  const [nearby, setNearby] = useState<NearbyHospital[]>([]);
+  const [contactsList, setContactsList] = useState<Contact[]>([]);
   const timer = useRef<ReturnType<typeof setInterval> | null>(null);
 
   const HOLD_MS = 3000;
+
+  useEffect(() => {
+    (async () => {
+      const { data } = await supabase.from("emergency_contacts").select("id,name,phone,relation");
+      setContactsList(data ?? []);
+    })();
+  }, [sent]);
 
   const trigger = async () => {
     setBusy(true);
     try {
       const pos = await new Promise<GeolocationPosition | null>((resolve) => {
         if (!navigator.geolocation) return resolve(null);
-        navigator.geolocation.getCurrentPosition(resolve, () => resolve(null), { timeout: 6000 });
+        navigator.geolocation.getCurrentPosition(resolve, () => resolve(null), { timeout: 8000 });
       });
-      await sos({
-        data: {
-          lat: pos?.coords.latitude, lng: pos?.coords.longitude,
-          language: lang,
-        },
-      });
+      const lat = pos?.coords.latitude;
+      const lng = pos?.coords.longitude;
+      if (lat != null && lng != null) setCoords({ lat, lng });
+      await sos({ data: { lat, lng, language: lang } });
       setSent(true);
       toast.success(t("sos_sent"));
+      // Fetch nearest hospitals in the background
+      if (lat != null && lng != null) {
+        try {
+          const list = await findHospitals({ data: { lat, lng, radiusMeters: 8000 } });
+          setNearby(list.slice(0, 5));
+        } catch { /* non-blocking */ }
+      }
     } catch (e) {
       toast.error(e instanceof Error ? e.message : "SOS failed");
     } finally {
@@ -95,8 +122,86 @@ function SosPage() {
         </p>
       </div>
 
+      {sent && (
+        <NotifyFamily coords={coords} contacts={contactsList} />
+      )}
+
+      {sent && (
+        <NearbyHospitalsPanel hospitals={nearby} coords={coords} />
+      )}
+
       <Contacts />
     </AppShell>
+  );
+}
+
+function NotifyFamily({ coords, contacts }: { coords: { lat: number; lng: number } | null; contacts: Contact[] }) {
+  if (contacts.length === 0) return null;
+  const mapLink = coords ? `https://maps.google.com/?q=${coords.lat},${coords.lng}` : "";
+  const msg = `🚨 EMERGENCY (MedSetu SOS): I need help. ${coords ? `My location: ${mapLink}` : "Location unavailable."}`;
+  const encoded = encodeURIComponent(msg);
+  const allNumbers = contacts.map((c) => c.phone).join(",");
+  return (
+    <section className="mt-6 rounded-2xl border border-destructive/30 bg-destructive/5 p-4">
+      <h2 className="flex items-center gap-2 font-display text-base font-semibold text-destructive">
+        <Share2 className="h-4 w-4" /> Notify family
+      </h2>
+      <p className="mt-1 text-xs text-muted-foreground">Send your live location to all emergency contacts in one tap.</p>
+      <div className="mt-3 flex flex-wrap gap-2">
+        <a href={`sms:${allNumbers}?body=${encoded}`} className="inline-flex items-center gap-1.5 rounded-full bg-destructive px-4 py-2 text-sm font-medium text-destructive-foreground hover:bg-destructive/90">
+          <MessageCircle className="h-4 w-4" /> SMS all
+        </a>
+        {contacts.map((c) => (
+          <a key={c.id} href={`https://wa.me/${c.phone.replace(/\D/g, "")}?text=${encoded}`} target="_blank" rel="noopener noreferrer"
+            className="inline-flex items-center gap-1.5 rounded-full bg-success px-3 py-1.5 text-xs font-medium text-success-foreground hover:opacity-90">
+            <MessageCircle className="h-3.5 w-3.5" /> WhatsApp {c.name.split(" ")[0]}
+          </a>
+        ))}
+      </div>
+    </section>
+  );
+}
+
+function NearbyHospitalsPanel({ hospitals, coords }: { hospitals: NearbyHospital[]; coords: { lat: number; lng: number } | null }) {
+  return (
+    <section className="mt-6">
+      <h2 className="flex items-center gap-2 font-display text-base font-semibold">
+        <MapPin className="h-4 w-4 text-primary" /> Nearest hospitals
+      </h2>
+      {hospitals.length === 0 ? (
+        <p className="mt-2 text-xs text-muted-foreground">Searching hospitals near you…</p>
+      ) : (
+        <ul className="mt-2 space-y-2">
+          {hospitals.map((h) => (
+            <li key={h.place_id} className="flex items-start gap-3 rounded-xl border border-border bg-card p-3">
+              <div className={`grid h-9 w-9 shrink-0 place-items-center rounded-lg ${h.emergency_24h ? "bg-destructive/10 text-destructive" : "bg-primary/10 text-primary"}`}>
+                <MapPin className="h-4 w-4" />
+              </div>
+              <div className="min-w-0 flex-1">
+                <p className="truncate text-sm font-medium">{h.name}</p>
+                <p className="truncate text-xs text-muted-foreground">
+                  {h.distance_m != null ? `${(h.distance_m / 1000).toFixed(1)} km` : ""}
+                  {h.emergency_24h ? " · 24×7" : ""}
+                </p>
+              </div>
+              <div className="flex flex-col gap-1">
+                {h.phone && (
+                  <a href={`tel:${h.phone}`} className="inline-flex items-center gap-1 rounded-full bg-success px-2.5 py-1 text-[11px] font-medium text-success-foreground">
+                    <Phone className="h-3 w-3" /> Call
+                  </a>
+                )}
+                <a
+                  href={coords ? `https://www.google.com/maps/dir/?api=1&origin=${coords.lat},${coords.lng}&destination=${h.lat},${h.lng}` : `https://www.google.com/maps/dir/?api=1&destination=${h.lat},${h.lng}`}
+                  target="_blank" rel="noopener noreferrer"
+                  className="inline-flex items-center gap-1 rounded-full bg-primary px-2.5 py-1 text-[11px] font-medium text-primary-foreground">
+                  <Navigation className="h-3 w-3" /> Go
+                </a>
+              </div>
+            </li>
+          ))}
+        </ul>
+      )}
+    </section>
   );
 }
 

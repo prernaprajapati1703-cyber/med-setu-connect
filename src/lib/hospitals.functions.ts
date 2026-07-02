@@ -16,6 +16,7 @@ interface Hospital {
   rating?: number;
   emergency_24h?: boolean;
   distance_m?: number;
+  phone?: string;
 }
 
 function haversine(aLat: number, aLng: number, bLat: number, bLng: number) {
@@ -73,6 +74,7 @@ export const searchNearbyHospitals = createServerFn({ method: "POST" })
         rating: typeof p.rating === "number" ? p.rating : undefined,
         emergency_24h: open247,
         distance_m: Math.round(haversine(data.lat, data.lng, lat, lng)),
+        phone: (p.nationalPhoneNumber as string | undefined) ?? undefined,
       };
     });
 
