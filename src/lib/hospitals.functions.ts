@@ -16,6 +16,7 @@ interface Hospital {
   rating?: number;
   emergency_24h?: boolean;
   distance_m?: number;
+  phone?: string;
 }
 
 function haversine(aLat: number, aLng: number, bLat: number, bLng: number) {
