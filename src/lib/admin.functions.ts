@@ -75,7 +75,7 @@ export const seedDemoAnalytics = createServerFn({ method: "POST" })
       status: i < 2 ? "active" : "resolved",
       created_at: new Date(Date.now() - i * 3600000).toISOString(),
     }));
-    await supabaseAdmin.from("emergency_alerts").insert(alerts);
+    await supabaseAdmin.from("emergency_alerts").insert(alerts as never);
 
     return { ok: true, inserted: rows.length, alerts: alerts.length };
   });
