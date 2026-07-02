@@ -1,7 +1,7 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { useEffect, useState } from "react";
 import { useServerFn } from "@tanstack/react-start";
-import { adminAnalytics, isAdmin } from "@/lib/admin.functions";
+import { adminAnalytics, isAdmin, seedDemoAnalytics, clearDemoAnalytics } from "@/lib/admin.functions";
 import { supabase } from "@/integrations/supabase/client";
 import { AppShell } from "@/components/AppShell";
 import { useLang } from "@/lib/i18n/LanguageProvider";
@@ -27,8 +27,11 @@ function AdminPage() {
   const { t } = useLang();
   const checkAdmin = useServerFn(isAdmin);
   const fetchAnalytics = useServerFn(adminAnalytics);
+  const seed = useServerFn(seedDemoAnalytics);
+  const clearDemo = useServerFn(clearDemoAnalytics);
   const [allowed, setAllowed] = useState<boolean | null>(null);
   const [data, setData] = useState<Analytics | null>(null);
+  const [busy, setBusy] = useState(false);
 
   const load = async () => {
     const ok = await checkAdmin({});
@@ -69,12 +72,38 @@ function AdminPage() {
 
   const severityData = (["low", "medium", "high"] as const).map((k) => ({ name: t(`severity_${k}` as "severity_low") , value: data.severityCounts[k], key: k }));
 
+  const runSeed = async () => {
+    setBusy(true);
+    try { await seed({}); await load(); } finally { setBusy(false); }
+  };
+  const runClear = async () => {
+    setBusy(true);
+    try { await clearDemo({}); await load(); } finally { setBusy(false); }
+  };
+  const isEmpty = data.totalCases === 0 && data.alerts.length === 0;
+
   return (
     <AppShell title={t("admin_title")}>
-      <div className="flex items-center gap-2">
-        <ShieldCheck className="h-5 w-5 text-accent" />
-        <h1 className="font-display text-lg font-semibold">{t("admin_title")}</h1>
+      <div className="flex flex-wrap items-center justify-between gap-2">
+        <div className="flex items-center gap-2">
+          <ShieldCheck className="h-5 w-5 text-accent" />
+          <h1 className="font-display text-lg font-semibold">{t("admin_title")}</h1>
+        </div>
+        <div className="flex gap-2">
+          <button onClick={runSeed} disabled={busy} className="rounded-lg bg-primary px-3 py-1.5 text-xs font-medium text-primary-foreground disabled:opacity-50">
+            {busy ? "…" : "Load demo data"}
+          </button>
+          <button onClick={runClear} disabled={busy} className="rounded-lg border border-border px-3 py-1.5 text-xs font-medium disabled:opacity-50">
+            Clear demo
+          </button>
+        </div>
       </div>
+
+      {isEmpty && (
+        <div className="mt-4 rounded-2xl border border-dashed border-border bg-secondary/30 p-4 text-sm text-muted-foreground">
+          No case data yet. Tap <b>Load demo data</b> to populate the dashboard with sample triage cases and SOS alerts across regions, or submit real symptoms via the Triage page.
+        </div>
+      )}
 
       <div className="mt-4 grid grid-cols-2 gap-3 md:grid-cols-4">
         <StatCard label="Total cases" value={data.totalCases} Icon={Activity} />
