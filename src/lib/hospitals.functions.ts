@@ -74,6 +74,7 @@ export const searchNearbyHospitals = createServerFn({ method: "POST" })
         rating: typeof p.rating === "number" ? p.rating : undefined,
         emergency_24h: open247,
         distance_m: Math.round(haversine(data.lat, data.lng, lat, lng)),
+        phone: (p.nationalPhoneNumber as string | undefined) ?? undefined,
       };
     });
 
