@@ -2,11 +2,22 @@ import { createFileRoute } from "@tanstack/react-router";
 import { useEffect, useRef, useState } from "react";
 import { useServerFn } from "@tanstack/react-start";
 import { createSosAlert } from "@/lib/sos.functions";
+import { searchNearbyHospitals } from "@/lib/hospitals.functions";
 import { supabase } from "@/integrations/supabase/client";
 import { AppShell } from "@/components/AppShell";
 import { useLang } from "@/lib/i18n/LanguageProvider";
-import { Siren, Phone, Plus, Trash2, CheckCircle2 } from "lucide-react";
+import { Siren, Phone, Plus, Trash2, CheckCircle2, MapPin, Navigation, Share2, MessageCircle } from "lucide-react";
 import { toast } from "sonner";
+
+interface NearbyHospital {
+  place_id: string;
+  name: string;
+  address?: string;
+  lat: number; lng: number;
+  emergency_24h?: boolean;
+  distance_m?: number;
+  phone?: string;
+}
 
 export const Route = createFileRoute("/_authenticated/sos")({
   head: () => ({ meta: [{ title: "Emergency SOS — MedSetu" }] }),
