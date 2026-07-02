@@ -41,19 +41,50 @@ function HospitalsPage() {
   const mapInst = useRef<unknown>(null);
   const markersRef = useRef<Array<{ setMap: (m: unknown) => void }>>([]);
 
-  // Get location, then search
-  useEffect(() => {
+  const [locError, setLocError] = useState<string | null>(null);
+
+  const requestLocation = () => {
+    setLocError(null);
+    setBusy(true);
     if (!navigator.geolocation) {
-      toast.error("Geolocation not supported");
+      setLocError("Geolocation not supported by this browser");
       setBusy(false);
       return;
     }
+    const onOk = (p: GeolocationPosition) =>
+      setPos({ lat: p.coords.latitude, lng: p.coords.longitude });
+
+    // Try fast/cached low-accuracy first; if that fails, retry with high accuracy.
     navigator.geolocation.getCurrentPosition(
-      (p) => setPos({ lat: p.coords.latitude, lng: p.coords.longitude }),
-      (e) => { toast.error(e.message); setBusy(false); },
-      { enableHighAccuracy: true, timeout: 10_000 },
+      onOk,
+      () => {
+        navigator.geolocation.getCurrentPosition(
+          onOk,
+          (e2) => {
+            const msg =
+              e2.code === 1
+                ? "Location permission denied. Enable location access for this site and retry."
+                : e2.code === 2
+                ? "Location unavailable. Check GPS/Wi-Fi and retry."
+                : "Getting your location took too long. Tap Retry, or use the fallback location.";
+            setLocError(msg);
+            toast.error(msg);
+            setBusy(false);
+          },
+          { enableHighAccuracy: true, timeout: 20_000, maximumAge: 0 },
+        );
+      },
+      { enableHighAccuracy: false, timeout: 8_000, maximumAge: 5 * 60_000 },
     );
-  }, []);
+  };
+
+  useEffect(() => { requestLocation(); }, []);
+
+  const useFallbackLocation = () => {
+    // Delhi as a safe default so the user can still see the feature.
+    setLocError(null);
+    setPos({ lat: 28.6139, lng: 77.2090 });
+  };
 
   useEffect(() => {
     if (!pos) return;
