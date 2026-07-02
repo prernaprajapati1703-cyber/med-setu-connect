@@ -29,29 +29,45 @@ interface Contact { id: string; name: string; phone: string; relation: string | 
 function SosPage() {
   const { t, lang } = useLang();
   const sos = useServerFn(createSosAlert);
+  const findHospitals = useServerFn(searchNearbyHospitals);
   const [holding, setHolding] = useState(false);
   const [progress, setProgress] = useState(0);
   const [sent, setSent] = useState(false);
   const [busy, setBusy] = useState(false);
+  const [coords, setCoords] = useState<{ lat: number; lng: number } | null>(null);
+  const [nearby, setNearby] = useState<NearbyHospital[]>([]);
+  const [contactsList, setContactsList] = useState<Contact[]>([]);
   const timer = useRef<ReturnType<typeof setInterval> | null>(null);
 
   const HOLD_MS = 3000;
+
+  useEffect(() => {
+    (async () => {
+      const { data } = await supabase.from("emergency_contacts").select("id,name,phone,relation");
+      setContactsList(data ?? []);
+    })();
+  }, [sent]);
 
   const trigger = async () => {
     setBusy(true);
     try {
       const pos = await new Promise<GeolocationPosition | null>((resolve) => {
         if (!navigator.geolocation) return resolve(null);
-        navigator.geolocation.getCurrentPosition(resolve, () => resolve(null), { timeout: 6000 });
+        navigator.geolocation.getCurrentPosition(resolve, () => resolve(null), { timeout: 8000 });
       });
-      await sos({
-        data: {
-          lat: pos?.coords.latitude, lng: pos?.coords.longitude,
-          language: lang,
-        },
-      });
+      const lat = pos?.coords.latitude;
+      const lng = pos?.coords.longitude;
+      if (lat != null && lng != null) setCoords({ lat, lng });
+      await sos({ data: { lat, lng, language: lang } });
       setSent(true);
       toast.success(t("sos_sent"));
+      // Fetch nearest hospitals in the background
+      if (lat != null && lng != null) {
+        try {
+          const list = await findHospitals({ data: { lat, lng, radiusMeters: 8000 } });
+          setNearby(list.slice(0, 5));
+        } catch { /* non-blocking */ }
+      }
     } catch (e) {
       toast.error(e instanceof Error ? e.message : "SOS failed");
     } finally {
