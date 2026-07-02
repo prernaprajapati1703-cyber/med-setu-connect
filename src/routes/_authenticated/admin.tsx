@@ -27,8 +27,11 @@ function AdminPage() {
   const { t } = useLang();
   const checkAdmin = useServerFn(isAdmin);
   const fetchAnalytics = useServerFn(adminAnalytics);
+  const seed = useServerFn(seedDemoAnalytics);
+  const clearDemo = useServerFn(clearDemoAnalytics);
   const [allowed, setAllowed] = useState<boolean | null>(null);
   const [data, setData] = useState<Analytics | null>(null);
+  const [busy, setBusy] = useState(false);
 
   const load = async () => {
     const ok = await checkAdmin({});
