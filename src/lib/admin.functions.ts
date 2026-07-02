@@ -64,7 +64,7 @@ export const seedDemoAnalytics = createServerFn({ method: "POST" })
         created_at: new Date(Date.now() - daysAgo * 86400000).toISOString(),
       };
     });
-    await supabaseAdmin.from("symptoms").insert(rows);
+    await supabaseAdmin.from("symptoms").insert(rows as never);
 
     const alerts = Array.from({ length: 6 }, (_, i) => ({
       user_id: context.userId,
